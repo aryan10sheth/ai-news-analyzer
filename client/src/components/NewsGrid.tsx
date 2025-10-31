@@ -1,7 +1,7 @@
 import { NewsArticle } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Newspaper } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface NewsGridProps {
@@ -56,7 +56,7 @@ function ArticleCard({ article, onClick }: { article: NewsArticle; onClick: () =
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-            <span className="text-4xl text-muted-foreground">📰</span>
+            <Newspaper className="h-16 w-16 text-primary/40" />
           </div>
         )}
         <div className="absolute top-2 left-2">
@@ -106,7 +106,7 @@ export function NewsGrid({ articles, onArticleClick, isLoading }: NewsGridProps)
   if (articles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4" data-testid="text-no-articles">
-        <div className="text-6xl mb-4">🔍</div>
+        <Newspaper className="h-24 w-24 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold mb-2">No articles found</h3>
         <p className="text-muted-foreground text-center max-w-md">
           Try adjusting your search terms or check back later for new articles.

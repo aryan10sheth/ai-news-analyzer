@@ -40,43 +40,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Summarize article
-  app.get("/api/summarize", async (req, res) => {
+  app.post("/api/summarize", async (req, res) => {
     try {
-      const url = req.query.url as string;
+      const validatedData = summarizeRequestSchema.parse(req.body);
       
-      if (!url) {
-        return res.status(400).json({ error: "Article URL is required" });
-      }
-
-      const newsResponse = await axios.get(`${NEWS_API_BASE_URL}/everything`, {
-        params: {
-          q: url,
-          pageSize: 1,
-          apiKey: NEWS_API_KEY,
-        },
-      });
-
-      const article = newsResponse.data.articles?.[0];
-      
-      if (!article) {
-        return res.status(404).json({ error: "Article not found" });
-      }
-
-      const content = article.content || article.description || "";
+      const content = validatedData.content || validatedData.description || "";
       
       if (!content) {
         return res.status(400).json({ error: "Article has no content to summarize" });
       }
 
       const summary = await summarizeArticle(
-        article.title,
+        validatedData.title,
         content,
-        article.description
+        validatedData.description
       );
 
       res.json(summary);
     } catch (error: any) {
       console.error("Error summarizing article:", error);
+      
+      if (error.name === "ZodError") {
+        return res.status(400).json({ 
+          error: "Invalid request data",
+          details: error.errors 
+        });
+      }
+
       res.status(500).json({ 
         error: "Failed to generate summary",
         details: error.message 

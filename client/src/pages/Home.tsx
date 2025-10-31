@@ -16,11 +16,28 @@ export default function Home() {
 
   const { data: articles = [], isLoading } = useQuery<NewsArticle[]>({
     queryKey: ["/api/news", searchQuery],
+    queryFn: async () => {
+      const query = searchQuery || "latest";
+      const res = await fetch(`/api/news?q=${encodeURIComponent(query)}`);
+      if (!res.ok) throw new Error("Failed to fetch articles");
+      return res.json();
+    },
     refetchOnWindowFocus: false,
   });
 
   const { data: summary, isLoading: isLoadingSummary } = useQuery<ArticleSummary>({
     queryKey: ["/api/summarize", selectedArticle?.url],
+    queryFn: async () => {
+      if (!selectedArticle) throw new Error("No article selected");
+      
+      const res = await apiRequest("POST", "/api/summarize", {
+        title: selectedArticle.title,
+        content: selectedArticle.content || "",
+        description: selectedArticle.description || "",
+      });
+      
+      return await res.json();
+    },
     enabled: !!selectedArticle,
     refetchOnWindowFocus: false,
   });
@@ -29,11 +46,13 @@ export default function Home() {
     mutationFn: async (message: string) => {
       const articleContext = `Title: ${selectedArticle?.title}\n\nContent: ${selectedArticle?.content || selectedArticle?.description || ''}`;
       
-      return apiRequest<{ response: string }>("POST", "/api/chat", {
+      const res = await apiRequest("POST", "/api/chat", {
         articleContext,
         message,
         conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
       });
+      
+      return await res.json();
     },
     onSuccess: (data, message) => {
       const userMessage: ChatMessage = {

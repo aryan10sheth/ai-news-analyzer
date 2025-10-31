@@ -2,8 +2,8 @@ import { NewsArticle, ArticleSummary, ChatMessage } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { AISummaryPanel } from "./AISummaryPanel";
-import { ChatbotPanel } from "./ChatbotPanel";
+import { AISummaryPanel } from "@/components/AISummaryPanel";
+import { ChatbotPanel } from "@/components/ChatbotPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ArticleDetailProps {

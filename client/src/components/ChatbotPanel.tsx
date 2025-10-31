@@ -124,7 +124,6 @@ export function ChatbotPanel({ messages, onSendMessage, isSending, article }: Ch
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question..."
-            disabled={isSending}
             className="flex-1"
             data-testid="input-chat-message"
           />

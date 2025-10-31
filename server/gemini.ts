@@ -77,7 +77,7 @@ ${articleContext}
 
 Provide accurate, concise, and helpful answers based on the article content. If the question is not related to the article, politely guide the conversation back to the article topic.`;
 
-    const contents = [
+    const conversationText = [
       systemPrompt,
       ...(conversationHistory || []).map(msg => 
         `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
@@ -87,7 +87,7 @@ Provide accurate, concise, and helpful answers based on the article content. If 
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: contents,
+      contents: conversationText,
     });
 
     return response.text || "I'm sorry, I couldn't generate a response. Please try again.";
