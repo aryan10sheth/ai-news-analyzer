@@ -1,15 +1,118 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { summarizeArticle, chatAboutArticle } from "./gemini";
+import { summarizeRequestSchema, chatRequestSchema } from "@shared/schema";
+import axios from "axios";
+
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
+const NEWS_API_BASE_URL = "https://newsapi.org/v2";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  
+  // Fetch news articles
+  app.get("/api/news", async (req, res) => {
+    try {
+      const query = (req.query.q as string) || "latest";
+      const pageSize = 30;
+      
+      const response = await axios.get(`${NEWS_API_BASE_URL}/everything`, {
+        params: {
+          q: query,
+          pageSize,
+          language: "en",
+          sortBy: "publishedAt",
+          apiKey: NEWS_API_KEY,
+        },
+      });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+      if (response.data.status === "ok") {
+        res.json(response.data.articles || []);
+      } else {
+        res.status(500).json({ error: "Failed to fetch news articles" });
+      }
+    } catch (error: any) {
+      console.error("Error fetching news:", error.response?.data || error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch news articles",
+        details: error.response?.data?.message || error.message 
+      });
+    }
+  });
+
+  // Summarize article
+  app.get("/api/summarize", async (req, res) => {
+    try {
+      const url = req.query.url as string;
+      
+      if (!url) {
+        return res.status(400).json({ error: "Article URL is required" });
+      }
+
+      const newsResponse = await axios.get(`${NEWS_API_BASE_URL}/everything`, {
+        params: {
+          q: url,
+          pageSize: 1,
+          apiKey: NEWS_API_KEY,
+        },
+      });
+
+      const article = newsResponse.data.articles?.[0];
+      
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+
+      const content = article.content || article.description || "";
+      
+      if (!content) {
+        return res.status(400).json({ error: "Article has no content to summarize" });
+      }
+
+      const summary = await summarizeArticle(
+        article.title,
+        content,
+        article.description
+      );
+
+      res.json(summary);
+    } catch (error: any) {
+      console.error("Error summarizing article:", error);
+      res.status(500).json({ 
+        error: "Failed to generate summary",
+        details: error.message 
+      });
+    }
+  });
+
+  // Chat about article
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const validatedData = chatRequestSchema.parse(req.body);
+      
+      const response = await chatAboutArticle(
+        validatedData.articleContext,
+        validatedData.message,
+        validatedData.conversationHistory
+      );
+
+      res.json({ response });
+    } catch (error: any) {
+      console.error("Error in chat:", error);
+      
+      if (error.name === "ZodError") {
+        return res.status(400).json({ 
+          error: "Invalid request data",
+          details: error.errors 
+        });
+      }
+
+      res.status(500).json({ 
+        error: "Failed to get chat response",
+        details: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
