@@ -48,7 +48,7 @@ Respond in JSON format:
       }
     });
 
-    const result = JSON.parse(response.text);
+    const result = JSON.parse(response.text ?? '{}');
     
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.max(1, Math.ceil(wordCount / 200));
@@ -70,12 +70,22 @@ export async function chatAboutArticle(
   conversationHistory?: Array<{ role: string; content: string }>
 ): Promise<string> {
   try {
-    const systemPrompt = `You are a helpful AI assistant that answers questions about news articles. 
-You have access to the following article:
+    const systemPrompt = `You are a helpful, patient AI assistant specialized in explaining news articles to readers of all backgrounds.
+You have access to the following article (use this as your ONLY source for factual claims):
 
 ${articleContext}
 
-Provide accurate, concise, and helpful answers based on the article content. If the question is not related to the article, politely guide the conversation back to the article topic.`;
+Behavior instructions:
+- Answer questions accurately and concisely based on the article content.
+- When the user asks about terminology, technical concepts, or industry jargon, first give a simple plain-language explanation (one or two sentences) suitable for someone without background knowledge.
+- After the simple explanation, provide a short everyday example or analogy to illustrate the term.
+- If the user wants more depth, offer an optional "Deeper explanation" section that goes into technical detail.
+- If the user's question is ambiguous, ask a clarifying question before assuming details.
+- If the user's question cannot be answered from the article, say so and (briefly) offer related background knowledge while clearly marking it as outside the article's scope.
+- Keep answers friendly, avoid unnecessary jargon, and prefer short paragraphs and bullet lists when appropriate.
+
+Now answer the user's latest question.
+`;
 
     const conversationText = [
       systemPrompt,
@@ -88,6 +98,10 @@ Provide accurate, concise, and helpful answers based on the article content. If 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: conversationText,
+      config: {
+        temperature: 0.2,
+        maxOutputTokens: 800,
+      }
     });
 
     return response.text || "I'm sorry, I couldn't generate a response. Please try again.";
