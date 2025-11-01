@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { NewsArticle, ArticleSummary, ChatMessage } from "@shared/schema";
 import { NewsGrid } from "@/components/NewsGrid";
 import { SearchBar } from "@/components/SearchBar";
+import { rankArticlesBySemanticSimilarity } from "@/lib/search";
 import { ArticleDetail } from "@/components/ArticleDetail";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Newspaper } from "lucide-react";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<"text" | "semantic">("text");
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const { toast } = useToast();
@@ -99,12 +101,19 @@ export default function Home() {
     chatMutation.mutate(message);
   };
 
-  const filteredArticles = searchQuery
-    ? articles.filter(article =>
+  let filteredArticles = articles;
+
+  if (searchQuery) {
+    if (searchMode === "text") {
+      filteredArticles = articles.filter(article =>
         article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         article.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : articles;
+      );
+    } else {
+      // semantic ranking (client-side TF-IDF cosine similarity)
+      filteredArticles = rankArticlesBySemanticSimilarity(articles, searchQuery);
+    }
+  }
 
   if (selectedArticle) {
     return (
@@ -133,6 +142,8 @@ export default function Home() {
               value={searchQuery} 
               onChange={setSearchQuery}
               placeholder="Search news articles..."
+              mode={searchMode}
+              onModeChange={setSearchMode}
             />
           </div>
         </div>

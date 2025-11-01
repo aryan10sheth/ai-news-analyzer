@@ -1,10 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { summarizeArticle, chatAboutArticle } from "./gemini";
-import { summarizeRequestSchema, chatRequestSchema } from "@shared/schema";
+import { summarizeRequestSchema, chatRequestSchema } from "../shared/schema";
 import axios from "axios";
 
-const NEWS_API_KEY = process.env.NEWS_API_KEY;
+// Read NEWS_API_KEY at request time via process.env
 const NEWS_API_BASE_URL = "https://newsapi.org/v2";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pageSize,
           language: "en",
           sortBy: "publishedAt",
-          apiKey: NEWS_API_KEY,
+          apiKey: process.env.NEWS_API_KEY,
         },
       });
 
